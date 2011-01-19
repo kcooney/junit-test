@@ -7,8 +7,8 @@ import org.junit.runner.notification.RunNotifier;
  * of significant events as it does so. You will need to subclass <code>Runner</code>
  * when using {@link org.junit.runner.RunWith} to invoke a custom runner. When creating
  * a custom runner, in addition to implementing the abstract methods here you must
- * also provide a constructor that takes as an argument the {@link Class} containing
- * the tests.
+ * either provide a constructor that takes as an argument the {@link Class} containing
+ * the tests, or you must annotate the runner with {@link Factory}.
  * <p/>
  * The default runner implementation guarantees that the instances of the test case
  * class will be constructed immediately before running the test and that the runner
