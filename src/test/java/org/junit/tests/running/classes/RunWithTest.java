@@ -11,13 +11,14 @@ import org.junit.runner.Runner;
 import org.junit.runner.RunnerFactory;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.model.RunnerBuilder;
+import org.junit.tests.running.classes.RunWithTest.ThrowingRunnerFactory;
 
 public class RunWithTest {
 
-	private static String log;
+	private static String log = "";
 
-	public static class ExampleRunner extends Runner {
-		public ExampleRunner(Class<?> klass) {
+	public static class LoggingRunner extends Runner {
+		public LoggingRunner(Class<?> klass) {
 			log+= "initialize";
 		}
 
@@ -39,13 +40,11 @@ public class RunWithTest {
 		}		
 	}
 	
-	@RunWith(ExampleRunner.class)
+	@RunWith(LoggingRunner.class)
 	public static class ExampleTest {
 	}
 	
 	@Test public void run() {
-		log= "";
-
 		JUnitCore.runClasses(ExampleTest.class);
 		assertTrue(log.contains("plan"));
 		assertTrue(log.contains("initialize"));
@@ -56,13 +55,11 @@ public class RunWithTest {
 	}
 	
 	@Test public void runWithExtendsToSubclasses() {
-		log= "";
-
 		JUnitCore.runClasses(SubExampleTest.class);
 		assertTrue(log.contains("run"));
 	}
 	
-	public static class BadRunner extends Runner {
+	public static class RunnerWithoutProperConstructor extends Runner {
 		@Override
 		public Description getDescription() {
 			return null;
@@ -74,49 +71,121 @@ public class RunWithTest {
 		}
 	}
 	
-	@RunWith(BadRunner.class)
-	public static class Empty {		
+	@RunWith(RunnerWithoutProperConstructor.class)
+	public static class TestWithRunnerWithoutProperConstructor {		
 	}
 	
 	@Test
-	public void characterizeErrorMessageFromBadRunner() {
+	public void characterizeErrorMessageFromRunnerWithoutProperConstructor() {
 		assertEquals(
-				"Custom runner class BadRunner should have a public constructor with signature BadRunner(Class testClass)",
-				JUnitCore.runClasses(Empty.class).getFailures().get(0)
-						.getMessage());
+				"Custom runner class RunnerWithoutProperConstructor "
+				+ "should have a public constructor with signature "
+				+ "RunnerWithoutProperConstructor(Class testClass)",
+				JUnitCore.runClasses(TestWithRunnerWithoutProperConstructor.class)
+				        .getFailures().get(0).getMessage());
 	}
 
-	public static class ExampleRunnerFactory implements RunnerFactory {
-
-		public Runner createRunner(Class<?> testClass, RunnerBuilder builder) {
-			return new ExampleRunner(testClass);
+	public static class RunnerThatThrowsInConstructor extends Runner {
+		public RunnerThatThrowsInConstructor(Class<?> klass) {
+			throw new RuntimeException("expected");
 		}
-	}
-
-	@Factory(ExampleRunnerFactory.class)
-	public static class ExampleRunnerWithFactory extends Runner {
 
 		@Override
 		public Description getDescription() {
-			throw new UnsupportedOperationException();
+			return null;
 		}
 
 		@Override
 		public void run(RunNotifier notifier) {
-			throw new UnsupportedOperationException();
+		}
+	}
+	
+	@RunWith(RunnerThatThrowsInConstructor.class)
+	public static class TestWithRunnerThatThrowsInConstructor {
+	}
+	
+	@Test
+	public void messagePropagatedWhenRunnerConstructorThrows() {
+		assertEquals(
+				"expected",
+				JUnitCore.runClasses(TestWithRunnerThatThrowsInConstructor.class)
+				        .getFailures().get(0).getMessage());
+	}
+
+	public static class SurferDudeRunnerFactory implements RunnerFactory {
+		public Runner createRunner(Class<?> testClass, RunnerBuilder builder) {
+			return new SufferDudeLoggingRunner(testClass, "Dude, ");
+		}
+	}
+
+	@Factory(SurferDudeRunnerFactory.class)
+	public static class SufferDudeLoggingRunner extends Runner {
+		private final String fPrefix;
+
+		public SufferDudeLoggingRunner(Class<?> klass, String prefix) {
+			fPrefix= prefix;
+			log+= fPrefix+"initialize";
+		}
+
+		@Override
+		public void run(RunNotifier notifier) {
+			log+= fPrefix+"run";
+		}
+
+		@Override
+		public int testCount() {
+			log+= fPrefix+"count";
+			return 0;
+		}
+
+		@Override
+		public Description getDescription() {
+			log+= fPrefix+"plan";
+			return Description.createSuiteDescription("example");
 		}		
 	}
 	
-	@RunWith(ExampleRunnerWithFactory.class)
+	@RunWith(SufferDudeLoggingRunner.class)
 	public static class ExampleTestWithRunnerFactory {
 	}
 	
 	@Test public void runnerFactory() {
-		log= "";
-
 		JUnitCore.runClasses(ExampleTestWithRunnerFactory.class);
-		assertTrue(log.contains("plan"));
-		assertTrue(log.contains("initialize"));
-		assertTrue(log.contains("run"));
+		assertTrue(log.contains("Dude, plan"));
+		assertTrue(log.contains("Dude, initialize"));
+		assertTrue(log.contains("Dude, run"));
+	}
+
+	public static class ThrowingRunnerFactory implements RunnerFactory {
+		public Runner createRunner(Class<?> testClass, RunnerBuilder builder) {
+			throw new RuntimeException("expected exception from factory");
+		}
+	}
+
+	@Factory(ThrowingRunnerFactory.class)
+	public static class RunnerThatUsesFactoryThatThrows extends Runner {
+		private RunnerThatUsesFactoryThatThrows() {
+		}
+
+		@Override
+		public Description getDescription() {
+			return null;
+		}
+
+		@Override
+		public void run(RunNotifier notifier) {
+		}
+	}
+	
+	@RunWith(RunnerThatUsesFactoryThatThrows.class)
+	public static class TestWithRunnerThatUsesFactoryThatThrows {
+	}
+	
+	@Test
+	public void messagePropagatedWhenRunnerFactoryThrows() {
+		assertEquals(
+				"expected exception from factory",
+				JUnitCore.runClasses(TestWithRunnerThatUsesFactoryThatThrows.class)
+				        .getFailures().get(0).getMessage());
 	}
 }

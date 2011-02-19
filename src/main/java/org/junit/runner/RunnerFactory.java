@@ -18,8 +18,9 @@ public interface RunnerFactory {
 	 * Creates a runner to run the given class
 	 *
 	 * @param testClass Class annotated with {@code RunWith}
-	 * @param builder Builder for runners
+	 * @param builder Builder for building runners for children
 	 * @return Runner
+	 * @throws Exception if a runner cannot be constructed
 	 */
-	Runner createRunner(Class<?> testClass, RunnerBuilder builder);
+	Runner createRunner(Class<?> testClass, RunnerBuilder builder) throws Exception;
 }
