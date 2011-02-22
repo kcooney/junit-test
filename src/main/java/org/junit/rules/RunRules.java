@@ -9,8 +9,9 @@ import org.junit.runners.model.Statement;
 public class RunRules extends Statement {
 	private final Statement statement;
 
-	public RunRules(Statement base, Iterable<TestRule> rules, Description description) {
-		statement= applyAll(base, rules, description);
+	public RunRules(RuleType stage, Statement base, Iterable<TestRule> rules,
+			Description description) {
+		statement= applyAll(stage, base, rules, description);
 	}
 	
 	@Override
@@ -18,10 +19,10 @@ public class RunRules extends Statement {
 		statement.evaluate();
 	}
 
-	private static Statement applyAll(Statement result, Iterable<TestRule> rules,
+	private static Statement applyAll(RuleType stage, Statement result, Iterable<TestRule> rules,
 			Description description) {
 		for (TestRule each : rules)
-			result= each.apply(result, description);
+			result= each.apply(stage, result, description);
 		return result;
 	}
 }

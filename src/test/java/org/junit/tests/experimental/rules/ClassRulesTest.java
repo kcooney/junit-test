@@ -7,7 +7,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
+import org.junit.rules.AbstractTestRule;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runner.JUnitCore;
@@ -61,10 +61,12 @@ public class ClassRulesTest {
 		assertEquals(1, ExampleTestWithClassRule.counter.count);
 	}
 	
-	public static class CustomCounter implements TestRule {
+	public static class CustomCounter extends AbstractTestRule {
 		public int count = 0;
 		
-		public Statement apply(final Statement base, Description description) {
+		@Override
+		protected Statement applyAroundBeforeClasses(final Statement base,
+				Description description) {
 			return new Statement() {				
 				@Override
 				public void evaluate() throws Throwable {

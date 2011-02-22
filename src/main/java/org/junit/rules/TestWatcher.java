@@ -36,8 +36,10 @@ import org.junit.runners.model.Statement;
  * }
  * </pre>
  */
-public abstract class TestWatcher implements TestRule {
-	public Statement apply(final Statement base, final Description description) {
+public abstract class TestWatcher extends AbstractTestRule {
+
+	@Override
+	protected Statement applyAroundBefores(final Statement base, final Description description) {
 		return new Statement() {
 			@Override
 			public void evaluate() throws Throwable {

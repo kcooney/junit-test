@@ -16,6 +16,7 @@ import org.junit.internal.runners.model.EachTestNotifier;
 import org.junit.internal.runners.statements.RunAfters;
 import org.junit.internal.runners.statements.RunBefores;
 import org.junit.rules.RunRules;
+import org.junit.rules.RuleType;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
@@ -191,7 +192,7 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
 	private Statement withClassRules(Statement statement) {
 		List<TestRule> classRules= classRules();
 		return classRules.isEmpty() ? statement :
-		    new RunRules(statement, classRules, getDescription());
+		    new RunRules(RuleType.AROUND_BEFORE_CLASSES, statement, classRules, getDescription());
 	}
 
 	/**

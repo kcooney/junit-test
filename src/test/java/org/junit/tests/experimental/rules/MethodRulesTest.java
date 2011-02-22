@@ -13,6 +13,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.AbstractTestRule;
 import org.junit.rules.TestRule;
 import org.junit.rules.MethodRule;
 import org.junit.rules.TestName;
@@ -248,10 +249,12 @@ public class MethodRulesTest {
 				hasSingleFailureContaining("must be public"));
 	}
 	
-	public static class CustomTestName implements TestRule {
+	public static class CustomTestName extends AbstractTestRule {
 		public String name = null;
 			
-		public Statement apply(final Statement base, final Description description) {
+		@Override
+		protected Statement applyAroundBefores(final Statement base,
+				final Description description) {
 			return new Statement() {				
 				@Override
 				public void evaluate() throws Throwable {

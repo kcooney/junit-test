@@ -18,6 +18,7 @@ import org.junit.internal.runners.statements.InvokeMethod;
 import org.junit.internal.runners.statements.RunAfters;
 import org.junit.internal.runners.statements.RunBefores;
 import org.junit.rules.RunRules;
+import org.junit.rules.RuleType;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runner.notification.RunNotifier;
@@ -270,7 +271,16 @@ public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
 	 * Returns a {@link Statement} that invokes {@code method} on {@code test}
 	 */
 	protected Statement methodInvoker(FrameworkMethod method, Object test) {
-		return new InvokeMethod(method, test);
+		Statement statement= new InvokeMethod(method, test);
+		List<TestRule> testRules= getTestRules(test);
+		if (!testRules.isEmpty()) {
+			Description description= describeChild(method);
+			statement= new RunRules(RuleType.AROUND_TEST, statement, testRules,
+					description);
+			statement= new RunRules(RuleType.AROUND_VERIFICATIONS, statement, testRules,
+					description);
+		}
+		return statement;
 	}
 
 	/**
@@ -307,10 +317,7 @@ public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
 	 * Returns a {@link Statement}: run all non-overridden {@code @Before}
 	 * methods on this class and superclasses before running {@code next}; if
 	 * any throws an Exception, stop execution and pass the exception on.
-	 * 
-	 * @deprecated Will be private soon: use Rules instead
 	 */
-	@Deprecated
 	protected Statement withBefores(FrameworkMethod method, Object target,
 			Statement statement) {
 		List<FrameworkMethod> befores= getTestClass().getAnnotatedMethods(
@@ -325,23 +332,29 @@ public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
 	 * After methods are always executed: exceptions thrown by previous steps
 	 * are combined, if necessary, with exceptions from After methods into a
 	 * {@link MultipleFailureException}.
-	 * 
-	 * @deprecated Will be private soon: use Rules instead
 	 */
-	@Deprecated
 	protected Statement withAfters(FrameworkMethod method, Object target,
 			Statement statement) {
 		List<FrameworkMethod> afters= getTestClass().getAnnotatedMethods(
 				After.class);
-		return afters.isEmpty() ? statement : new RunAfters(statement, afters,
-				target);
+		
+		if (!afters.isEmpty()) {
+			statement= new RunAfters(statement, afters, target);
+		}
+		
+		List<TestRule> testRules= getTestRules(target);
+		if (!testRules.isEmpty()) {
+			Description description= describeChild(method);
+			statement= new RunRules(RuleType.AROUND_BEFORES, statement, testRules, description);
+		}
+		
+		return statement;
 	}
 
 	private Statement withRules(FrameworkMethod method, Object target,
 			Statement statement) {
 		Statement result= statement;
 		result= withMethodRules(method, target, result);
-		result= withTestRules(method, target, result);
 		return result;
 	}
 
@@ -359,21 +372,6 @@ public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
 	private List<org.junit.rules.MethodRule> getMethodRules(Object target) {
 		return getTestClass().getAnnotatedFieldValues(target,
 				Rule.class, org.junit.rules.MethodRule.class);
-	}
-
-	/**
-	 * Returns a {@link Statement}: apply all non-static {@link Value} fields
-	 * annotated with {@link Rule}.
-	 *
-	 * @param statement The base statement
-	 * @return a RunRules statement if any class-level {@link Rule}s are
-	 *         found, or the base statement
-	 */
-	private Statement withTestRules(FrameworkMethod method, Object target,
-			Statement statement) {
-		List<TestRule> testRules= getTestRules(target);
-		return testRules.isEmpty() ? statement :
-			new RunRules(statement, testRules, describeChild(method));
 	}
 
 	private List<TestRule> getTestRules(Object target) {

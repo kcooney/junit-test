@@ -33,8 +33,13 @@ import org.junit.runners.model.Statement;
  * </pre>
  */
 public abstract class ExternalResource implements TestRule {
-	public Statement apply(Statement base, Description description) {
-		return statement(base);
+	public Statement apply(RuleType stage, Statement base, Description description) {
+		switch (stage) {
+		case AROUND_BEFORES:
+		case AROUND_BEFORE_CLASSES:
+			return statement(base);
+		}
+		return base;
 	}
 
 	private Statement statement(final Statement base) {

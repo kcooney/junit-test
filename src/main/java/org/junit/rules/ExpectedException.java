@@ -41,7 +41,7 @@ import org.junit.runners.model.Statement;
  * }
  * </pre>
  */
-public class ExpectedException implements TestRule {
+public class ExpectedException extends AbstractTestRule {
 	/**
 	 * @return a Rule that expects no exception to be thrown
 	 * (identical to behavior without this Rule)
@@ -55,8 +55,9 @@ public class ExpectedException implements TestRule {
 	private ExpectedException() {
 		
 	}
-	
-	public Statement apply(Statement base,
+
+	@Override
+	protected Statement applyAroundBefores(Statement base,
 			org.junit.runner.Description description) {
 		return new ExpectedExceptionStatement(base);
 	}

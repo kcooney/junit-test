@@ -44,11 +44,12 @@ public interface TestRule {
 	/**
 	 * Modifies the method-running {@link Statement} to implement this
 	 * test-running rule.
-	 * 
+	 *
+	 * @param type The type of rule to apply
 	 * @param base The {@link Statement} to be modified
 	 * @param description A {@link Description} of the test implemented in {@code base}
 	 * @return a new statement, which may be the same as {@code base},
 	 * a wrapper around {@code base}, or a completely new Statement.
 	 */
-	Statement apply(Statement base, Description description);
+	Statement apply(RuleType type, Statement base, Description description);
 }
