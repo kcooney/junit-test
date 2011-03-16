@@ -47,6 +47,8 @@ import org.junit.runners.model.Statement;
  */
 public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
 
+	private TestRule fAdditionalRule;
+
 	/**
 	 * Creates a BlockJUnit4ClassRunner to run {@code klass}
 	 * 
@@ -377,8 +379,12 @@ public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
 	}
 
 	private List<TestRule> getTestRules(Object target) {
-		return getTestClass().getAnnotatedFieldValues(target,
+		List<TestRule> rules= getTestClass().getAnnotatedFieldValues(target,
 				Rule.class, TestRule.class);
+		if (fAdditionalRule != null) {
+			rules.add(fAdditionalRule);
+		}
+		return rules;
 	}
 
 	private Class<? extends Throwable> getExpectedException(Test annotation) {
@@ -396,5 +402,9 @@ public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
 		if (annotation == null)
 			return 0;
 		return annotation.timeout();
+	}
+
+	public void addRule(TestRule rule) {
+		fAdditionalRule= rule;
 	}
 }

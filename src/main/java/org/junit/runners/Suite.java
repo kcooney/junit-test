@@ -7,12 +7,17 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.List;
 
+import org.junit.EachBuildRule;
 import org.junit.internal.builders.AllDefaultPossibilitiesBuilder;
+import org.junit.rules.BuildRule;
+import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
 import org.junit.runner.notification.RunNotifier;
+import org.junit.runners.model.FrameworkField;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
+import org.junit.runners.model.TestClass;
 
 /**
  * Using <code>Suite</code> as a runner allows you to manually
@@ -98,9 +103,40 @@ public class Suite extends ParentRunner<Runner> {
 	 * @throws InitializationError
 	 */
 	protected Suite(RunnerBuilder builder, Class<?> klass, Class<?>[] suiteClasses) throws InitializationError {
-		this(klass, builder.runners(klass, suiteClasses));
+		this(klass, wrapWithBuildRules(klass, builder).runners(klass, suiteClasses));
 	}
 	
+	private static RunnerBuilder wrapWithBuildRules(
+			Class<?> klass, final RunnerBuilder builder) throws InitializationError {
+		try {
+			TestClass testClass = new TestClass(klass);
+			List<FrameworkField> fields= testClass.getAnnotatedFields(EachBuildRule.class);
+			if (fields.isEmpty()) {
+				return builder;
+			}
+			FrameworkField field= fields.get(0);
+			BuildRule object= (BuildRule) field.get(null);
+			
+			final TestRule rule= object.getAdditionalRule();
+			
+			return new RunnerBuilder() {
+
+				@Override
+				public Runner runnerForClass(Class<?> testClass) throws Throwable {
+					Runner runner= builder.runnerForClass(testClass);
+					if (runner instanceof BlockJUnit4ClassRunner) {
+						((BlockJUnit4ClassRunner) runner).addRule(rule);
+					}
+					return runner;
+				}
+			};
+		} catch (IllegalArgumentException e) {
+			throw new InitializationError(e);
+		} catch (IllegalAccessException e) {
+			throw new InitializationError(e);
+		}
+	}
+
 	/**
 	 * Called by this class and subclasses once the runners making up the suite have been determined
 	 * 
