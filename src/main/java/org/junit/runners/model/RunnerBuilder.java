@@ -37,6 +37,7 @@ import org.junit.runner.Runner;
  */
 public abstract class RunnerBuilder {
 	private final Set<Class<?>> parents= new HashSet<Class<?>>();
+	private TestGlobals fTestGlobals= new TestGlobals();
 
 	/**
 	 * Override to calculate the correct runner for a test class at runtime.
@@ -58,6 +59,26 @@ public abstract class RunnerBuilder {
 		} catch (Throwable e) {
 			return new ErrorReportingRunner(testClass, e);
 		}
+	}
+
+	/**
+	 * Always returns a runner, even if it is just one that prints an error instead of running tests.
+	 * @param testClass class to be run
+	 * @param testGlobals global variables to pass to the child runners
+	 * @return a Runner
+	 */
+	public Runner safeRunnerForClass(Class<?> testClass, ReadableTestGlobals testGlobals) {
+		TestGlobals previousGlobals= fTestGlobals;
+		fTestGlobals= testGlobals.toTestGlobals();
+		try {
+			return safeRunnerForClass(testClass);
+		} finally {
+			fTestGlobals= previousGlobals;
+		}
+	}
+
+	public TestGlobals getTestGlobals() {
+		return fTestGlobals;
 	}
 
 	Class<?> addParent(Class<?> parent) throws InitializationError {
