@@ -10,7 +10,7 @@ import java.util.List;
 import org.junit.EachBuildRule;
 import org.junit.internal.builders.AllDefaultPossibilitiesBuilder;
 import org.junit.rules.BuildRule;
-import org.junit.rules.TestRule;
+import org.junit.runner.Angiopoietin;
 import org.junit.runner.Description;
 import org.junit.runner.Runner;
 import org.junit.runner.notification.RunNotifier;
@@ -26,7 +26,7 @@ import org.junit.runners.model.TestClass;
  * with <code>@RunWith(Suite.class)</code> and <code>@SuiteClasses({TestClass1.class, ...})</code>.
  * When you run this class, it will run all the tests in all the suite classes.
  */
-public class Suite extends ParentRunner<Runner> {
+public class Suite extends ParentRunner<Runner> implements Angiopoietin {
 	/**
 	 * Returns an empty suite.
 	 */
@@ -103,38 +103,7 @@ public class Suite extends ParentRunner<Runner> {
 	 * @throws InitializationError
 	 */
 	protected Suite(RunnerBuilder builder, Class<?> klass, Class<?>[] suiteClasses) throws InitializationError {
-		this(klass, wrapWithBuildRules(klass, builder).runners(klass, suiteClasses));
-	}
-	
-	private static RunnerBuilder wrapWithBuildRules(
-			Class<?> klass, final RunnerBuilder builder) throws InitializationError {
-		try {
-			TestClass testClass = new TestClass(klass);
-			List<FrameworkField> fields= testClass.getAnnotatedFields(EachBuildRule.class);
-			if (fields.isEmpty()) {
-				return builder;
-			}
-			FrameworkField field= fields.get(0);
-			BuildRule object= (BuildRule) field.get(null);
-			
-			final TestRule rule= object.getAdditionalRule();
-			
-			return new RunnerBuilder() {
-
-				@Override
-				public Runner runnerForClass(Class<?> testClass) throws Throwable {
-					Runner runner= builder.runnerForClass(testClass);
-					if (runner instanceof BlockJUnit4ClassRunner) {
-						((BlockJUnit4ClassRunner) runner).addRule(rule);
-					}
-					return runner;
-				}
-			};
-		} catch (IllegalArgumentException e) {
-			throw new InitializationError(e);
-		} catch (IllegalAccessException e) {
-			throw new InitializationError(e);
-		}
+		this(klass, builder.runners(klass, suiteClasses));
 	}
 
 	/**
@@ -147,8 +116,22 @@ public class Suite extends ParentRunner<Runner> {
 	protected Suite(Class<?> klass, List<Runner> runners) throws InitializationError {
 		super(klass);
 		fRunners = runners;
+		
+		TestClass testClass = new TestClass(klass);
+		List<FrameworkField> fields= testClass.getAnnotatedFields(EachBuildRule.class);
+		if (!fields.isEmpty()) {
+			try {
+				FrameworkField field= fields.get(0);
+				BuildRule buildRule= (BuildRule) field.get(null);
+				injectBuildRule(buildRule, runners);
+			} catch (RuntimeException e) {
+				throw new InitializationError(e);
+			} catch (IllegalAccessException e) {
+				throw new InitializationError(e);
+			}
+		}
 	}
-	
+
 	@Override
 	protected List<Runner> getChildren() {
 		return fRunners;
@@ -162,5 +145,18 @@ public class Suite extends ParentRunner<Runner> {
 	@Override
 	protected void runChild(Runner runner, final RunNotifier notifier) {
 		runner.run(notifier);
+	}
+
+	// implemented from Angiopoietin
+	public void addBuildRule(BuildRule buildRule) {
+		injectBuildRule(buildRule, fRunners);
+	}
+
+	private static void injectBuildRule(BuildRule buildRule, List<Runner> runners) {
+		for (Runner runner : runners) {
+			if (runner instanceof Angiopoietin) {
+				((Angiopoietin) runner).addBuildRule(buildRule);
+			}
+		}
 	}
 }

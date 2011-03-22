@@ -17,8 +17,10 @@ import org.junit.internal.runners.statements.FailOnTimeout;
 import org.junit.internal.runners.statements.InvokeMethod;
 import org.junit.internal.runners.statements.RunAfters;
 import org.junit.internal.runners.statements.RunBefores;
+import org.junit.rules.BuildRule;
 import org.junit.rules.RunRules;
 import org.junit.rules.TestRule;
+import org.junit.runner.Angiopoietin;
 import org.junit.runner.Description;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.model.FrameworkField;
@@ -45,7 +47,7 @@ import org.junit.runners.model.Statement;
  * JUnit4ClassRunner} was in an internal package, and is now deprecated.
  * </ul>
  */
-public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
+public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> implements Angiopoietin {
 
 	private TestRule fAdditionalRule;
 
@@ -404,7 +406,10 @@ public class BlockJUnit4ClassRunner extends ParentRunner<FrameworkMethod> {
 		return annotation.timeout();
 	}
 
-	public void addRule(TestRule rule) {
-		fAdditionalRule= rule;
+	/* (non-Javadoc)
+	 * @see org.junit.runners.Angiopoietin#addBuildRule(org.junit.rules.BuildRule)
+	 */
+	public void addBuildRule(BuildRule buildRule) {
+		fAdditionalRule= buildRule.getAdditionalRule();
 	}
 }

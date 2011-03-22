@@ -23,31 +23,51 @@ public class TrickleDownSuiteTest {
 		assertThat(testResult(SampleSuite.class), isSuccessful());
 	}
 	
+	@Test
+	public void shouldInjectRuleWithNestedSuites() {
+		assertThat(testResult(OuterSuite.class), isSuccessful());
+	}
+	
 	@RunWith(Suite.class)
 	@SuiteClasses({SampleClass.class})
 	public static class SampleSuite {
+
 		@EachBuildRule
-		public static BuildRule rule = new BuildRule() {
-			@Override
-			public TestRule getAdditionalRule() {
-				return new TestRule() {
-					public Statement apply(
-							final Statement base, Description description) {
-						return new Statement() {
-							@Override
-							public void evaluate() throws Throwable {;
-								try {
-									base.evaluate();
-								} catch (ArithmeticException ignored) {
-								}
-							}
-						};
-					}
-				};
-			}
-		};
+		public static BuildRule rule = new IgnoreArithmeticException();
 	}
 	
+	@RunWith(Suite.class)
+	@SuiteClasses({InnerSuite.class})
+	public static class OuterSuite {
+
+		@EachBuildRule
+		public static BuildRule rule = new IgnoreArithmeticException();
+	}
+	
+	@RunWith(Suite.class)
+	@SuiteClasses({SampleClass.class})
+	public static class InnerSuite {
+	}
+	
+	private static final class IgnoreArithmeticException extends BuildRule {
+		@Override
+		public TestRule getAdditionalRule() {
+			return new TestRule() {
+				public Statement apply(
+						final Statement base, Description description) {
+					return new Statement() {
+						@Override
+						public void evaluate() throws Throwable {;
+						try {
+							base.evaluate();
+						} catch (ArithmeticException ignored) {
+						}
+						}
+					};
+				}
+			};
+		}
+	}
 	
 	@RunWith(JUnit4.class)
 	public static class SampleClass {
